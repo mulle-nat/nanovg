@@ -28,7 +28,7 @@
 #ifndef NVG_NO_STB
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#endif 
+#endif
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4100)  // unreferenced formal parameter
@@ -340,7 +340,7 @@ error:
 
 NVGparams* nvgInternalParams(NVGcontext* ctx)
 {
-    return &ctx->params;
+	 return &ctx->params;
 }
 
 void nvgDeleteInternal(NVGcontext* ctx)
@@ -911,8 +911,8 @@ NVGpaint nvgRadialGradient(NVGcontext* ctx,
 }
 
 NVGpaint nvgBoxGradient(NVGcontext* ctx,
-							   float x, float y, float w, float h, float r, float f,
-							   NVGcolor icol, NVGcolor ocol)
+								float x, float y, float w, float h, float r, float f,
+								NVGcolor icol, NVGcolor ocol)
 {
 	NVGpaint p;
 	NVG_NOTUSED(ctx);
@@ -1631,8 +1631,8 @@ static NVGvertex* nvg__roundCapStart(NVGvertex* dst, NVGpoint* p,
 }
 
 static NVGvertex* nvg__roundCapEnd(NVGvertex* dst, NVGpoint* p,
-								   float dx, float dy, float w, int ncap,
-								   float aa, float u0, float u1)
+									float dx, float dy, float w, int ncap,
+									float aa, float u0, float u1)
 {
 	int i;
 	float px = p->x;
@@ -1994,13 +1994,13 @@ void nvgBezierTo(NVGcontext* ctx, float c1x, float c1y, float c2x, float c2y, fl
 
 void nvgQuadTo(NVGcontext* ctx, float cx, float cy, float x, float y)
 {
-    float x0 = ctx->commandx;
-    float y0 = ctx->commandy;
-    float vals[] = { NVG_BEZIERTO,
-        x0 + 2.0f/3.0f*(cx - x0), y0 + 2.0f/3.0f*(cy - y0),
-        x + 2.0f/3.0f*(cx - x), y + 2.0f/3.0f*(cy - y),
-        x, y };
-    nvg__appendCommands(ctx, vals, NVG_COUNTOF(vals));
+	 float x0 = ctx->commandx;
+	 float y0 = ctx->commandy;
+	 float vals[] = { NVG_BEZIERTO,
+		  x0 + 2.0f/3.0f*(cx - x0), y0 + 2.0f/3.0f*(cy - y0),
+		  x + 2.0f/3.0f*(cx - x), y + 2.0f/3.0f*(cy - y),
+		  x, y };
+	 nvg__appendCommands(ctx, vals, NVG_COUNTOF(vals));
 }
 
 void nvgArcTo(NVGcontext* ctx, float x1, float y1, float x2, float y2, float radius)
@@ -2239,7 +2239,7 @@ void nvgFill(NVGcontext* ctx)
 	fillPaint.outerColor.a *= state->alpha;
 
 	ctx->params.renderFill(ctx->params.userPtr, &fillPaint, state->compositeOperation, &state->scissor, ctx->fringeWidth,
-						   ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths);
+							ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths);
 
 	// Count triangles
 	for (i = 0; i < ctx->cache->npaths; i++) {
@@ -2454,6 +2454,12 @@ static void nvg__renderText(NVGcontext* ctx, NVGvertex* verts, int nverts)
 	ctx->textTriCount += nverts/3;
 }
 
+static int   nvg__isTransformFlipped( const float *xform)
+{
+	float det = xform[0] * xform[3] - xform[2] * xform[1];
+	return( det < 0);
+}
+
 float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char* end)
 {
 	NVGstate* state = nvg__getState(ctx);
@@ -2464,6 +2470,8 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 	float invscale = 1.0f / scale;
 	int cverts = 0;
 	int nverts = 0;
+	int isFlipped;
+	float tmp;
 
 	if (end == NULL)
 		end = string + strlen(string);
@@ -2480,6 +2488,7 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 	verts = nvg__allocTempVerts(ctx, cverts);
 	if (verts == NULL) return x;
 
+	isFlipped = nvg__isTransformFlipped( state->xform);
 	fonsTextIterInit(ctx->fs, &iter, x*scale, y*scale, string, end, FONS_GLYPH_BITMAP_REQUIRED);
 	prevIter = iter;
 	while (fonsTextIterNext(ctx->fs, &iter, &q)) {
@@ -2497,6 +2506,11 @@ float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char*
 				break;
 		}
 		prevIter = iter;
+		if( isFlipped)
+		{
+			tmp = q.y0; q.y0 = q.y1; q.y1 = tmp;
+			tmp = q.t0; q.t0 = q.t1; q.t1 = tmp;
+		}
 		// Transform corners.
 		nvgTransformPoint(&c[0],&c[1], state->xform, q.x0*invscale, q.y0*invscale);
 		nvgTransformPoint(&c[2],&c[3], state->xform, q.x1*invscale, q.y0*invscale);
